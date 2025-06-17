@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Resolver Desigualdades</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+      background-color: #f0f0f0;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+    }
+    #resultado {
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px #999;
+    }
+  </style>
+</head>
+<body>
+  <h1>Solucionador de Desigualdades Lineales y Cuadráticas</h1>
+  <p>Ejemplos válidos: <code>2*x+3 < 7</code> o <code>x^2 - 4 > 0</code></p>
+  <input type="text" id="inecuacion" placeholder="Escribe la inecuación">
+  <button onclick="resolver()">Resolver</button>
+  <div id="resultado"></div>
+
+  <script>
+    function resolver() {
+      const input = document.getElementById('inecuacion').value.replace(/\s+/g, '');
+      const resultadoDiv = document.getElementById('resultado');
+
+      try {
+        const operadores = ['<', '<=', '>=', '>'];
+        let op = operadores.find(o => input.includes(o));
+        if (!op) throw new Error("Operador no reconocido. Usa <, >, <=, >=");
+
+        let [izq, der] = input.split(op);
+        const expr = `${izq}-(${der})`;
+
+        // Identificar si es cuadrática
+        const esCuadratica = expr.includes('x^2');
+        const esLineal = !esCuadratica && expr.includes('x');
+
+        let a = 0, b = 0, c = 0;
+
+        // Convertimos a forma ax² + bx + c
+        const exprMod = expr.replace(/\^/g, '**');
+        const fx = new Function("x", `return ${exprMod};`);
+
+        if (esCuadratica) {
+          // Encontrar coeficientes por evaluación
+          let y0 = fx(0);
+          let y1 = fx(1);
+          let y2 = fx(2);
+          c = y0;
+          b = y1 - y0;
+          a = (y2 - 2 * y1 + y0) / 2;
+        } else if (esLineal) {
+          // Derivada constante, obtener pendiente
+          b = fx(1) - fx(0);
+          c = fx(0);
+        } else {
+          throw new Error("No se detectó variable 'x'");
+        }
+
+        let solucion = "";
+
+        if (esLineal) {
+          // bx + c op 0 → x op -c/b
+          const xVal = -c / b;
+          const simbolo = b > 0 ? op : invertir(op);
+          solucion = `x ${simbolo} ${xVal.toFixed(2)}`;
+        } else if (esCuadratica) {
+          const disc = b * b - 4 * a * c;
+          if (disc < 0) {
+            if ((op === '>' || op === '>=') && a > 0) {
+              solucion = "Todos los reales";
+            } else if ((op === '<' || op === '<=') && a < 0) {
+              solucion = "Todos los reales";
+            } else {
+              solucion = "Sin solución real";
+            }
+          } else {
+            const r1 = (-b + Math.sqrt(disc)) / (2 * a);
+            const r2 = (-b - Math.sqrt(disc)) / (2 * a);
+            const [min, max] = [Math.min(r1, r2), Math.max(r1, r2)];
+            if (op === '>') {
+              solucion = a > 0 ? `x < ${min.toFixed(2)} o x > ${max.toFixed(2)}` : `x ∈ (${min.toFixed(2)}, ${max.toFixed(2)})`;
+            } else if (op === '>=') {
+              solucion = a > 0 ? `x ≤ ${min.toFixed(2)} o x ≥ ${max.toFixed(2)}` : `x ∈ [${min.toFixed(2)}, ${max.toFixed(2)}]`;
+            } else if (op === '<') {
+              solucion = a < 0 ? `x < ${min.toFixed(2)} o x > ${max.toFixed(2)}` : `x ∈ (${min.toFixed(2)}, ${max.toFixed(2)})`;
+            } else if (op === '<=') {
+              solucion = a < 0 ? `x ≤ ${min.toFixed(2)} o x ≥ ${max.toFixed(2)}` : `x ∈ [${min.toFixed(2)}, ${max.toFixed(2)}]`;
+            }
+          }
+        }
+
+        resultadoDiv.innerHTML = `<strong>Solución:</strong><br>${solucion}`;
+      } catch (error) {
+        resultadoDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+      }
+
+      function invertir(op) {
+        switch(op) {
+          case '>': return '<';
+          case '<': return '>';
+          case '>=': return '<=';
+          case '<=': return '>=';
+        }
+      }
+    }
+  </script>
+</body>
+</html>
